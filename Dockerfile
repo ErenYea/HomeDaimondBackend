@@ -10,6 +10,7 @@ COPY . /app
 # Install dependencies
 RUN python3 -m venv /opt/venv && \
     /opt/venv/bin/pip install --upgrade pip && \
+    sudo apt install libodbc2 && \
     /opt/venv/bin/pip install -r requirements.txt
 
 # Make sure the venv binaries are available in the path
