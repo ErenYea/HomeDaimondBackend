@@ -6,7 +6,9 @@ from typing import List
 import json
 import logging
 import uvicorn
-
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from payment import perform_sale
 from models import (
     Step2Response,
@@ -16,12 +18,19 @@ from models import (
     Step3Request,
     Step4Request,
     Step4Response,
+    EmailSchema,
 )
+from typing import List, Optional
 
 app = FastAPI()
 
 API_KEY = "xtYP5XQmm3aQjtZ8vTXaYS3fTjP937ph"
-
+EMAIL_HOST = "smtp.postmarkapp.com"
+EMAIL_HOST_USER = "946b5cca-67cb-452c-84bb-fc9c27ceec0e"
+EMAIL_HOST_PASSWORD = "946b5cca-67cb-452c-84bb-fc9c27ceec0e"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+SENDER_EMAIL = "Jason.mckittrick@fistream.com"
 # Set up CORS
 origins = [
     "*",
@@ -49,6 +58,33 @@ def get_db_connection():
 
     connection_string = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={username};PWD={password}"
     return pyodbc.connect(connection_string)
+
+
+def send_email(
+    email_from: str, subject: str, body: str, cc: Optional[List[str]] = None
+):
+    try:
+        # Set up the server
+        server = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
+        server.starttls() if EMAIL_USE_TLS else None
+        server.login(EMAIL_HOST_USER, EMAIL_HOST_PASSWORD)
+
+        # Create the email
+        msg = MIMEMultipart()
+        msg["From"] = email_from
+        msg["To"] = SENDER_EMAIL
+        msg["Subject"] = subject
+        # Add CC addresses if provided
+        if cc:
+            msg["Cc"] = ", ".join(cc)
+        msg.attach(MIMEText(body, "plain"))
+        recipients = [SENDER_EMAIL] + (cc if cc else [])
+        # Send the email
+        server.sendmail(SENDER_EMAIL, recipients, msg.as_string())
+        server.quit()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
 
 
 @app.post("/step1", response_model=Step1Response)
@@ -440,6 +476,12 @@ async def step4(request: Step4Request):
     finally:
         cursor.close()
         conn.close()
+
+
+@app.post("/contact")
+async def send_email_endpoint(email: EmailSchema):
+    send_email(email.email_from, email.subject, email.body)
+    return {"message": "Email sent successfully"}
 
 
 if __name__ == "__main__":

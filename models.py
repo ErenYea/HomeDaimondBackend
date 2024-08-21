@@ -1,19 +1,23 @@
 from pydantic import BaseModel
 from typing import List, Dict, Union, Optional
 
+
 class RateQuotedItem(BaseModel):
     LeadID: int
     ReserveID: int
     RateQuote: float
+
 
 class OptionItem(BaseModel):
     ReserveId: int
     ReserveDescription: str
     ReserveAmount: float
 
+
 class Step2Response(BaseModel):
     RateQuoted: List[RateQuotedItem]
     Options: List[OptionItem]
+
 
 class Step1Request(BaseModel):
     FirstName: str
@@ -23,11 +27,13 @@ class Step1Request(BaseModel):
     Phone: str
     SellerID: int
 
+
 class Step1Response(BaseModel):
     LeadID: int
     LeadUID: str
     CityName: str
     StateAbbreviation: str
+
 
 class Step2Request(BaseModel):
     LeadID: int
@@ -45,8 +51,10 @@ class Step2Request(BaseModel):
     Phone: str
     SellerID: int
 
+
 class Step3Request(BaseModel):
     RateQuoted: List[Dict[str, Union[int, float]]]
+
 
 class Step4Request(BaseModel):
     LeadID: int
@@ -57,14 +65,15 @@ class Step4Request(BaseModel):
     BillingAddress1: str
     BillingAddress2: str
     BillingCity: str
-    BillingStateID: int 
+    BillingStateID: int
     BillingZip: str
     BillingPhone: str
     BillingEmail: str
     ccnumber: str  # Updated key to match the data
-    ccexp: str     # Updated key to match the data
-    cvv: str       # Updated key to match the data
+    ccexp: str  # Updated key to match the data
+    cvv: str  # Updated key to match the data
     BillingStateAbbreviation: str
+
 
 class Step4Response(BaseModel):
     response: str
@@ -78,3 +87,10 @@ class Step4Response(BaseModel):
     response_code: str
     amount_authorized: str
     message: str
+
+
+class EmailSchema(BaseModel):
+    email_from: str
+    subject: str
+    body: str
+    cc: Optional[List[str]] = None  # Optional list of CC email addresses
