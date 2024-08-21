@@ -7,13 +7,15 @@ WORKDIR /app
 # Install necessary dependencies, including the ODBC driver for SQL Server
 RUN apt-get update && \
     apt-get install -y curl gnupg2 apt-transport-https && \
-    curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
-    curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
+    curl -sSL https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
+    curl -sSL https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
     apt-get update && \
     ACCEPT_EULA=Y apt-get install -y msodbcsql17 unixodbc-dev && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    python3 -m venv /opt/venv && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create a virtual environment and install Python dependencies
+RUN python3 -m venv /opt/venv && \
     /opt/venv/bin/pip install --upgrade pip && \
     /opt/venv/bin/pip install -r requirements.txt
 
