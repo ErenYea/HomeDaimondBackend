@@ -7,10 +7,11 @@ WORKDIR /app
 # Copy the current directory contents into the container at /app
 COPY . /app
 
-# Install dependencies
-RUN python3 -m venv /opt/venv && \
+# Install dependencies and required packages
+RUN apt-get update && \
+    apt-get install -y libodbc2 && \
+    python3 -m venv /opt/venv && \
     /opt/venv/bin/pip install --upgrade pip && \
-    sudo apt install libodbc2 && \
     /opt/venv/bin/pip install -r requirements.txt
 
 # Make sure the venv binaries are available in the path
