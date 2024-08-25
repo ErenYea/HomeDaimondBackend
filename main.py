@@ -78,12 +78,13 @@ def send_email(
         if cc:
             msg["Cc"] = ", ".join(cc)
         msg.attach(MIMEText(body, "plain"))
-        recipients = [SENDER_EMAIL] + (cc if cc else [])
+        recipients = cc if cc else []
         # Send the email
         server.sendmail(SENDER_EMAIL, recipients, msg.as_string())
         server.quit()
 
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
 
 
@@ -480,7 +481,12 @@ async def step4(request: Step4Request):
 
 @app.post("/contact")
 async def send_email_endpoint(email: EmailSchema):
-    send_email(email.email_from, email.subject, email.body)
+    send_email(
+        email.email_from,
+        email.subject,
+        email.body,
+        ["jschmuck@diamondhomeprotection.com", "tkasick@diamondhomeprlotection.com"],
+    )
     return {"message": "Email sent successfully"}
 
 

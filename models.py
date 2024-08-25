@@ -59,7 +59,7 @@ class Step3Request(BaseModel):
 class Step4Request(BaseModel):
     LeadID: int
     LeadUID: str
-    totalAmount: int
+    totalAmount: float
     BillingFirstName: str
     BillingLastName: str
     BillingAddress1: str
