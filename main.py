@@ -19,6 +19,7 @@ from models import (
     Step4Request,
     Step4Response,
     EmailSchema,
+    RemoveDataRequest,
 )
 from typing import List, Optional
 
@@ -107,36 +108,47 @@ async def step1(request: Step1Request):
 
     sql = """ 
     SET NOCOUNT ON;
-    DECLARE @LeadID INT;
-    DECLARE @LeadUID UNIQUEIDENTIFIER = NEWID();
-    DECLARE @TransLeadJSON NVARCHAR(MAX);
-    DECLARE @ZipCodeJSON NVARCHAR(MAX);
-    INSERT INTO [Lead].[EnrollmentLead]([FirstName], [LastName], [ZipCode], [Email], [Phone], [LeadUID], [SellerID])
-    VALUES (?, ?, ?, ?, ?, @LeadUID, ?);
-    SET @LeadID = SCOPE_IDENTITY();
-    SET @TransLeadJSON = (SELECT @LeadID AS LeadID, @LeadUID AS LeadUID FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
-    SET @ZipCodeJSON = (SELECT rzc.ZipCode, rzc.CityName, rzc.StateAbbreviation FROM Ref.ZipCode rzc WHERE rzc.ZipCode = ? FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
-    SELECT @TransLeadJSON AS TransactionLeadUIDs, @ZipCodeJSON AS ZipCode;
+    Declare @FirstName varchar(50),
+            @LastName varchar(50),
+            @ZipCode char(5),
+            @Email varchar(100),
+            @Phone varchar(20),
+            @SellerId int
+            
+    Set		@FirstName = ?
+    Set		@LastName = ?
+    Set		@ZipCode = ?
+    Set		@Email = ?
+    Set		@Phone = ?
+    Set  @SellerId = ?
+    EXEC [Lead].Insert_EnrollmentLead @FirstName,@LastName,@ZipCode,@Email,@Phone,@SellerId;
     """
 
     try:
-        cursor.execute(sql, *params, request.ZipCode)
+        cursor.execute(sql, *params)
         result = cursor.fetchone()
         logging.info(f"Raw result set: {result}")
 
-        if result and len(result) == 2:
-            transaction_lead_uids = json.loads(result[0])
-            zip_code_info = json.loads(result[1]) if result[1] else None
+        if result and len(result) == 1:
+            data = json.loads(result[0])
+            print(data)
+            transaction_lead_uids = data["TransactionLeadUIDs"]
+            zip_code_info = data["ZipCode"]
+            # zip_code_info = json.loads(result[1]) if result[1] else None
 
             if zip_code_info is None:
                 logging.warning("ZipCode query returned no results.")
 
             response = Step1Response(
-                LeadID=transaction_lead_uids["LeadID"],
-                LeadUID=transaction_lead_uids["LeadUID"],
-                CityName="" if zip_code_info is None else zip_code_info["CityName"],
+                LeadID=transaction_lead_uids[0]["LeadID"],
+                LeadUID=transaction_lead_uids[0]["LeadUID"],
+                CityName=(
+                    "" if zip_code_info[0] is None else zip_code_info[0]["CityName"]
+                ),
                 StateAbbreviation=(
-                    "" if zip_code_info is None else zip_code_info["StateAbbreviation"]
+                    ""
+                    if zip_code_info[0] is None
+                    else zip_code_info[0]["StateAbbreviation"]
                 ),
             )
 
@@ -488,6 +500,71 @@ async def send_email_endpoint(email: EmailSchema):
         ["jschmuck@diamondhomeprotection.com", "tkasick@diamondhomeprlotection.com"],
     )
     return {"message": "Email sent successfully"}
+
+
+@app.post("/removedata")
+async def remove_data(request: RemoveDataRequest):
+    logging.info(
+        f"Received Step 1 Request: {request.json()}"
+    )  # Log incoming request data
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    params = (
+        request.first_name,
+        request.last_name,
+        request.zipcode,
+        request.email,
+        request.phone,
+        request.homeaddress,
+        request.homecity,
+        request.homestate,
+        request.homezipcode,
+    )
+    sql = """ 
+    SET NOCOUNT ON;
+    EXEC Compliance.Insert_PersonalInformationRequest @FirstName=? @LastName=? @ZipCode=? @Email=? @Phone=? @HomeAddress=? @HomeCity=? @HomeState=? @HomeZipCode=?
+    """
+
+    try:
+        cursor.execute(sql, *params)
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return {"message": "Stored procedure executed successfully."}
+    except pyodbc.Error as e:
+        logging.error(f"Error executing Step 1 stored procedure: {e}")
+        if cursor.messages:
+            for message in cursor.messages:
+                logging.error(message[1])
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/getProperty")
+async def getProperty():
+    logging.info(f"Received Step 2 Request")  # Log incoming request data
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    sql = """ 
+    SET NOCOUNT ON;
+    EXEC [Ref].[Get_PropertyType]
+    """
+    try:
+        cursor.execute(sql)
+        result = cursor.fetchone()
+        json_data = result[0]
+        json_result = json.loads(json_data)
+        logging.info(f"Raw result set: {result}")
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return json_result
+    except pyodbc.Error as e:
+        logging.error(f"Error executing Step 1 stored procedure: {e}")
+        if cursor.messages:
+            for message in cursor.messages:
+                logging.error(message[1])
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

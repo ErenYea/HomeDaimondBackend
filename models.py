@@ -94,3 +94,15 @@ class EmailSchema(BaseModel):
     subject: str
     body: str
     cc: Optional[List[str]] = None  # Optional list of CC email addresses
+
+
+class RemoveDataRequest(BaseModel):
+    first_name: str
+    last_name: str
+    zipcode: str
+    email: str
+    phone: str
+    homeaddress: str
+    homecity: str
+    homestate: str
+    homezipcode: str
