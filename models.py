@@ -106,3 +106,6 @@ class RemoveDataRequest(BaseModel):
     homecity: str
     homestate: str
     homezipcode: str
+
+class CompanyDataRequest(BaseModel):
+    name:str

@@ -20,6 +20,7 @@ from models import (
     Step4Response,
     EmailSchema,
     RemoveDataRequest,
+    CompanyDataRequest
 )
 from typing import List, Optional
 
@@ -559,6 +560,41 @@ async def getProperty():
         cursor.close()
         conn.close()
         return json_result
+    except pyodbc.Error as e:
+        logging.error(f"Error executing Step 1 stored procedure: {e}")
+        if cursor.messages:
+            for message in cursor.messages:
+                logging.error(message[1])
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/getCompany")
+async def getCompany(request:CompanyDataRequest):
+    logging.info("Received Get Company Request")
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    sql = """ 
+    SET NOCOUNT ON;
+    SELECT SellerID, SellerName, SellerLogo, SellerFriendlyName FROM [Contract].[Seller]
+    where SellerURL = ? and
+    IsActive = 1
+    """
+    query = request.name
+    try:
+        cursor.execute(sql, query)
+        result = cursor.fetchone()
+        logging.info(f"Raw result set: {result}")
+        
+        if result:
+            # Convert the row into a dictionary
+            columns = [column[0] for column in cursor.description]
+            result_dict = dict(zip(columns, result))
+            data = json.dumps(result_dict)
+        else:
+            data = None
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return {"message": "Stored procedure executed successfully.","data":data}
     except pyodbc.Error as e:
         logging.error(f"Error executing Step 1 stored procedure: {e}")
         if cursor.messages:
