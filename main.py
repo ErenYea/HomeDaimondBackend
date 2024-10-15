@@ -20,7 +20,7 @@ from models import (
     Step4Response,
     EmailSchema,
     RemoveDataRequest,
-    CompanyDataRequest
+    CompanyDataRequest,
 )
 from typing import List, Optional
 
@@ -292,12 +292,12 @@ async def step3(request: Step3Request):
     cursor = conn.cursor()
 
     # Convert RateQuoted items to JSON string
-    quoted_details = json.dumps(request.RateQuoted)
+    quoted_details = request.json()
 
     logging.info(f"Step 3 JSON to be sent to stored procedure: {quoted_details}")
 
     sql = "EXEC Rates.Insert_FullRateQuoted @QuotedDetails = ?"
-
+    # return "hELLO"
     try:
         cursor.execute(sql, quoted_details)
         conn.commit()
@@ -381,6 +381,7 @@ async def step4(request: Step4Request):
             "amount": str(request.totalAmount),
             "lead_id": str(lead_id),
             "lead_uid": str(request.LeadUID),
+            "customer_vault":"add_customer"
         }
 
         # Perform sale transaction
@@ -404,9 +405,7 @@ async def step4(request: Step4Request):
             transaction_type = response_data.get("type", "")
             response_code = response_data.get("response_code", "")
             amount_authorized = response_data.get("amount_authorized", "")
-            customer_vault_id = (
-                None  # You may need to extract this from the response if available
-            )
+            customer_vault_id = response_data.get("customer_vault_id", "")
 
             sql_update = """
             DECLARE @LeadID int,
@@ -567,8 +566,9 @@ async def getProperty():
                 logging.error(message[1])
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/getCompany")
-async def getCompany(request:CompanyDataRequest):
+async def getCompany(request: CompanyDataRequest):
     logging.info("Received Get Company Request")
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -583,7 +583,7 @@ async def getCompany(request:CompanyDataRequest):
         cursor.execute(sql, query)
         result = cursor.fetchone()
         logging.info(f"Raw result set: {result}")
-        
+
         if result:
             # Convert the row into a dictionary
             columns = [column[0] for column in cursor.description]
@@ -594,7 +594,7 @@ async def getCompany(request:CompanyDataRequest):
         conn.commit()
         cursor.close()
         conn.close()
-        return {"message": "Stored procedure executed successfully.","data":data}
+        return {"message": "Stored procedure executed successfully.", "data": data}
     except pyodbc.Error as e:
         logging.error(f"Error executing Step 1 stored procedure: {e}")
         if cursor.messages:
