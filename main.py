@@ -23,16 +23,19 @@ from models import (
     CompanyDataRequest,
 )
 from typing import List, Optional
-
+import os
+# importing necessary functions from dotenv library
+from dotenv import load_dotenv
+load_dotenv() 
 app = FastAPI()
 
-API_KEY = "xtYP5XQmm3aQjtZ8vTXaYS3fTjP937ph"
-EMAIL_HOST = "smtp.postmarkapp.com"
-EMAIL_HOST_USER = "946b5cca-67cb-452c-84bb-fc9c27ceec0e"
-EMAIL_HOST_PASSWORD = "946b5cca-67cb-452c-84bb-fc9c27ceec0e"
-EMAIL_PORT = 587
+API_KEY = os.getenv("API_KEY")
+EMAIL_HOST = os.getenv("EMAIL_HOST")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+EMAIL_PORT = os.getenv("EMAIL_PORT")
 EMAIL_USE_TLS = True
-SENDER_EMAIL = "Jason.mckittrick@fistream.com"
+SENDER_EMAIL = os.getenv("SENDER_EMAIL")
 # Set up CORS
 origins = [
     "*",
