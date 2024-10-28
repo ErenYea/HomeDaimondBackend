@@ -97,15 +97,15 @@ class EmailSchema(BaseModel):
 
 
 class RemoveDataRequest(BaseModel):
-    first_name: str
-    last_name: str
-    zipcode: str
+    firstName: str
+    lastName: str
+    zipCode: str
     email: str
     phone: str
-    homeaddress: str
-    homecity: str
-    homestate: str
-    homezipcode: str
+    homeAddress: str
+    homeCity: str
+    homeStateID: str
+    homeZipCode: str
 
 class CompanyDataRequest(BaseModel):
     name:str

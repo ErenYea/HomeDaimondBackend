@@ -514,19 +514,19 @@ async def remove_data(request: RemoveDataRequest):
     cursor = conn.cursor()
 
     params = (
-        request.first_name,
-        request.last_name,
-        request.zipcode,
+        request.firstName,
+        request.lastName,
+        request.zipCode,
         request.email,
         request.phone,
-        request.homeaddress,
-        request.homecity,
-        request.homestate,
-        request.homezipcode,
+        request.homeAddress,
+        request.homeCity,
+        request.homeStateID,
+        request.homeZipCode,
     )
     sql = """ 
     SET NOCOUNT ON;
-    EXEC Compliance.Insert_PersonalInformationRequest @FirstName=? @LastName=? @ZipCode=? @Email=? @Phone=? @HomeAddress=? @HomeCity=? @HomeState=? @HomeZipCode=?
+    EXEC Compliance.Insert_PersonalInformationRequest ? , ? , ? , ? , ? , ? , ? , ? , ?
     """
 
     try:
